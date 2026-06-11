@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EIG — Activity Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --blue: #17558D;
+    --blue-light: #29ACE3;
+    --blue-faint: #e8f4fb;
+    --green: #2d8a4e;
+    --green-faint: #e6f4ec;
+    --amber: #c47a15;
+    --amber-faint: #fdf3e3;
+    --red: #c0392b;
+    --red-faint: #fdecea;
+    --purple: #6b46c1;
+    --purple-faint: #f0ebff;
+    --gray-900: #1a1a1a;
+    --gray-700: #444;
+    --gray-500: #777;
+    --gray-300: #ccc;
+    --gray-100: #f5f5f5;
+    --white: #ffffff;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: var(--gray-900); font-size: 14px; min-height: 100vh; }
+
+  .header { background: var(--blue); color: white; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .header-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-logo span { color: var(--blue-light); }
+  .header-nav { display: flex; gap: 4px; }
+  .nav-btn { background: transparent; border: none; color: rgba(255,255,255,0.7); padding: 6px 14px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; }
+  .nav-btn.active, .nav-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+  .header-date { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+
+  /* Role tabs */
+  .role-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .role-tab { flex: 1; padding: 10px; border: 2px solid var(--gray-300); border-radius: var(--radius); cursor: pointer; text-align: center; font-size: 14px; font-weight: 600; color: var(--gray-500); background: var(--white); transition: all 0.15s; }
+  .role-tab.ryan.active { border-color: var(--blue); background: var(--blue-faint); color: var(--blue); }
+  .role-tab.isaac.active { border-color: var(--green); background: var(--green-faint); color: var(--green); }
+  .role-tab.gilbert.active { border-color: var(--purple); background: var(--purple-faint); color: var(--purple); }
+  .role-tab:hover { border-color: var(--gray-500); color: var(--gray-700); }
+  .role-panel { display: none; }
+  .role-panel.active { display: block; }
+
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-100); }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .owner-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+  .tag-blue { background: var(--blue-faint); color: var(--blue); }
+  .tag-green { background: var(--green-faint); color: var(--green); }
+  .tag-purple { background: var(--purple-faint); color: var(--purple); }
+  .tag-amber { background: var(--amber-faint); color: var(--amber); }
+
+  .score-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--gray-100); }
+  .score-row:last-child { border-bottom: none; }
+  .score-label { flex: 1; color: var(--gray-700); font-size: 14px; }
+  .score-goal { font-size: 11px; color: var(--gray-500); min-width: 48px; text-align: right; }
+  .score-input { width: 64px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 14px; text-align: center; color: var(--gray-900); background: var(--white); }
+  .score-input:focus { outline: 2px solid var(--blue-light); border-color: transparent; }
+
+  .progress-wrap { margin-top: 16px; }
+  .progress-bar-bg { background: var(--gray-100); border-radius: 20px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 20px; transition: width 0.3s ease; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); margin-bottom: 6px; }
+
+  .date-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .date-row label { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+  .date-row input, .date-row select { border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; color: var(--gray-900); background: var(--white); }
+  .btn { background: var(--blue); color: white; border: none; border-radius: var(--radius-sm); padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn:hover { background: #12457a; }
+  .btn-outline { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+  .btn-outline:hover { background: var(--blue-faint); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: #a93226; }
+  .btn-green { background: var(--green); }
+  .btn-green:hover { background: #246040; }
+
+  .save-banner { display: flex; align-items: center; justify-content: space-between; background: var(--blue-faint); border: 1px solid var(--blue-light); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; gap: 12px; }
+  .save-banner p { font-size: 13px; color: var(--blue); font-weight: 500; }
+  .save-actions { display: flex; gap: 8px; }
+
+  /* Morning review grid */
+  .review-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .review-grid { grid-template-columns: 1fr; } }
+  .review-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+  .review-card-header { font-size: 13px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 3px solid; }
+  .review-card.ryan .review-card-header { border-color: var(--blue); color: var(--blue); }
+  .review-card.isaac .review-card-header { border-color: var(--green); color: var(--green); }
+  .review-card.gilbert .review-card-header { border-color: var(--purple); color: var(--purple); }
+  .review-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .review-item:last-child { border-bottom: none; }
+  .review-item-label { color: var(--gray-500); }
+  .review-item-val { font-weight: 600; color: var(--gray-900); }
+  .review-score { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gray-100); display: flex; justify-content: space-between; font-size: 12px; }
+  .review-score-val { font-weight: 700; }
+
+  /* Monthly charts */
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .metric-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; border-top: 3px solid var(--blue-light); }
+  .metric-card.green { border-top-color: var(--green); }
+  .metric-card.amber { border-top-color: var(--amber); }
+  .metric-card.purple { border-top-color: var(--purple); }
+  .metric-label { font-size: 11px; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 700; color: var(--blue); line-height: 1; }
+  .metric-card.green .metric-value { color: var(--green); }
+  .metric-card.amber .metric-value { color: var(--amber); }
+  .metric-card.purple .metric-value { color: var(--purple); }
+  .metric-sub { font-size: 11px; color: var(--gray-500); margin-top: 4px; }
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  /* Gilbert bonus scorecard */
+  .bonus-month-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .bonus-month-nav button { background: none; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; font-size: 14px; color: var(--gray-700); }
+  .bonus-month-nav button:hover { background: var(--gray-100); }
+  .bonus-month-nav span { font-size: 15px; font-weight: 600; color: var(--gray-900); min-width: 140px; text-align: center; }
+  .bonus-category { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; margin-bottom: 12px; }
+  .bonus-cat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .bonus-cat-name { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+  .bonus-cat-max { font-size: 12px; color: var(--gray-500); }
+  .bonus-score-row { display: flex; align-items: center; gap: 12px; }
+  .bonus-slider { flex: 1; accent-color: var(--purple); }
+  .bonus-score-display { font-size: 22px; font-weight: 700; color: var(--purple); min-width: 48px; text-align: center; }
+  .bonus-band { font-size: 11px; padding: 2px 8px; border-radius: 20px; min-width: 160px; text-align: center; }
+  .band-exceptional { background: #e6f4ec; color: var(--green); }
+  .band-strong { background: var(--blue-faint); color: var(--blue); }
+  .band-meets { background: var(--amber-faint); color: var(--amber); }
+  .band-needs { background: #fdecea; color: var(--red); }
+  .band-minimal { background: var(--gray-100); color: var(--gray-500); }
+  .bonus-total-card { background: var(--purple-faint); border: 2px solid var(--purple); border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 16px; }
+  .bonus-total-label { font-size: 13px; color: var(--purple); font-weight: 600; margin-bottom: 8px; }
+  .bonus-total-amount { font-size: 48px; font-weight: 700; color: var(--purple); line-height: 1; }
+  .bonus-total-sub { font-size: 13px; color: var(--purple); margin-top: 6px; opacity: 0.7; }
+  .bonus-notes { width: 100%; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 10px; font-size: 14px; color: var(--gray-900); font-family: inherit; resize: vertical; min-height: 80px; }
+  .bonus-notes:focus { outline: 2px solid var(--purple); border-color: transparent; }
+
+  /* Data table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--gray-100); }
+  .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--gray-100); }
+  .table-wrap { overflow-x: auto; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill-green { background: var(--green-faint); color: var(--green); }
+  .pill-amber { background: var(--amber-faint); color: var(--amber); }
+  .pill-red { background: var(--red-faint); color: var(--red); }
+
+  /* Goals */
+  .goals-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .goal-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+  .goal-row:last-child { border-bottom: none; }
+  .goal-label { flex: 1; font-size: 14px; color: var(--gray-700); }
+  .goal-input { width: 64px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 14px; text-align: center; }
+  .goal-label-input { flex: 1; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 5px 8px; font-size: 13px; color: var(--gray-700); background: var(--gray-100); }
+  .goal-label-input:focus { outline: none; border-color: var(--blue-light); background: var(--white); }
+  .goal-col-header { display: flex; align-items: center; gap: 10px; padding: 0 0 6px 0; border-bottom: 2px solid var(--gray-100); margin-bottom: 4px; }
+  .goal-col-header span:first-child { flex: 1; font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.4px; }
+  .goal-col-header span:last-child { width: 64px; font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.4px; text-align: center; }
+
+  .month-nav { display: flex; align-items: center; gap: 12px; }
+  .month-nav button { background: none; border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 5px 10px; cursor: pointer; font-size: 14px; color: var(--gray-700); }
+  .month-nav button:hover { background: var(--gray-100); }
+  .month-nav span { font-size: 15px; font-weight: 600; color: var(--gray-900); min-width: 140px; text-align: center; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--gray-900); color: white; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--gray-500); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">EIG <span>Activity Report</span></div>
+  <div class="header-nav">
+    <button class="nav-btn active" onclick="showPage('daily')">Daily entry</button>
+    <button class="nav-btn" onclick="showPage('morning')">Morning review</button>
+    <button class="nav-btn" onclick="showPage('monthly')">Monthly view</button>
+    <button class="nav-btn" onclick="showPage('gilbert')">Gilbert scorecard</button>
+    <button class="nav-btn" onclick="showPage('goals')">Goals &amp; settings</button>
+  </div>
+  <div class="header-date" id="header-date"></div>
+</div>
+
+<div class="container">
+
+  <!-- DAILY ENTRY -->
+  <div id="page-daily" class="page active">
+    <div class="date-row">
+      <label>Entry date</label>
+      <input type="date" id="entry-date">
+      <button class="btn btn-sm" onclick="loadDay()">Load</button>
+      <button class="btn btn-sm btn-outline" onclick="setToday()">Today</button>
+    </div>
+    <div id="unsaved-banner" class="save-banner" style="display:none;">
+      <p>You have unsaved changes for this date.</p>
+      <div class="save-actions">
+        <button class="btn btn-sm" onclick="saveDay()">Save entry</button>
+        <button class="btn btn-sm btn-outline" onclick="loadDay()">Discard</button>
+      </div>
+    </div>
+
+    <!-- Role selector -->
+    <div class="role-tabs">
+      <div class="role-tab ryan active" onclick="switchRole('ryan')">
+        <div>Ryan</div>
+        <div style="font-size:11px; font-weight:400; margin-top:2px;">Commercial lines</div>
+      </div>
+      <div class="role-tab isaac" onclick="switchRole('isaac')">
+        <div>Isaac</div>
+        <div style="font-size:11px; font-weight:400; margin-top:2px;">Personal lines</div>
+      </div>
+      <div class="role-tab gilbert" onclick="switchRole('gilbert')">
+        <div>Gilbert</div>
+        <div style="font-size:11px; font-weight:400; margin-top:2px;">VA — service &amp; quoting</div>
+      </div>
+    </div>
+
+    <!-- Ryan panel -->
+    <div id="panel-ryan" class="role-panel active">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Ryan — commercial lines</div>
+          <span class="owner-tag tag-blue">Principal agent</span>
+        </div>
+        <div class="score-row"><span class="score-label" id="lbl-r1">Outbound contacts (calls + drop-ins)</span><span class="score-goal" id="gl-r1"></span><input class="score-input" type="number" min="0" id="r1" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-r2">Commercial quotes issued</span><span class="score-goal" id="gl-r2"></span><input class="score-input" type="number" min="0" id="r2" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-r3">Referral conversations (contractors / roofers / mortgage)</span><span class="score-goal" id="gl-r3"></span><input class="score-input" type="number" min="0" id="r3" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-r4">Commercial policies bound</span><span class="score-goal" id="gl-r4"></span><input class="score-input" type="number" min="0" id="r4" oninput="markDirty()"></div>
+      </div>
+      <div class="card">
+        <div class="progress-label"><span>Daily score — Ryan</span><span id="score-label-ryan">0 / 0</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-ryan" style="width:0%; background:var(--blue-light);"></div></div>
+      </div>
+    </div>
+
+    <!-- Isaac panel -->
+    <div id="panel-isaac" class="role-panel">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Isaac — personal lines</div>
+          <span class="owner-tag tag-green">Personal lines lead</span>
+        </div>
+        <div class="score-row"><span class="score-label" id="lbl-i1">New personal lines quotes issued</span><span class="score-goal" id="gl-i1"></span><input class="score-input" type="number" min="0" id="i1" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-i2">Unsold quote follow-ups completed</span><span class="score-goal" id="gl-i2"></span><input class="score-input" type="number" min="0" id="i2" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-i3">BNI / referral leads received</span><span class="score-goal" id="gl-i3"></span><input class="score-input" type="number" min="0" id="i3" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-i4">Personal lines policies bound</span><span class="score-goal" id="gl-i4"></span><input class="score-input" type="number" min="0" id="i4" oninput="markDirty()"></div>
+      </div>
+      <div class="card">
+        <div class="progress-label"><span>Daily score — Isaac</span><span id="score-label-isaac">0 / 0</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-isaac" style="width:0%; background:var(--green);"></div></div>
+      </div>
+    </div>
+
+    <!-- Gilbert panel -->
+    <div id="panel-gilbert" class="role-panel">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Gilbert — VA daily activity</div>
+          <span class="owner-tag tag-purple">Virtual assistant</span>
+        </div>
+        <div class="score-row"><span class="score-label" id="lbl-g1">Service tickets completed</span><span class="score-goal" id="gl-g1"></span><input class="score-input" type="number" min="0" id="g1" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-g2">Quotes run / completed</span><span class="score-goal" id="gl-g2"></span><input class="score-input" type="number" min="0" id="g2" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-g3">Emails / client follow-ups handled</span><span class="score-goal" id="gl-g3"></span><input class="score-input" type="number" min="0" id="g3" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-g4">Training / development activity (mins)</span><span class="score-goal" id="gl-g4"></span><input class="score-input" type="number" min="0" id="g4" oninput="markDirty()"></div>
+        <div class="score-row"><span class="score-label" id="lbl-g5">Activity 5</span><span class="score-goal" id="gl-g5"></span><input class="score-input" type="number" min="0" id="g5" oninput="markDirty()"></div>
+      </div>
+      <div class="card">
+        <div class="progress-label"><span>Daily score — Gilbert</span><span id="score-label-gilbert">0 / 0</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-gilbert" style="width:0%; background:var(--purple);"></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:4px;">
+      <button class="btn" onclick="saveDay()">Save entry</button>
+      <button class="btn btn-outline" onclick="clearPanel()">Clear</button>
+    </div>
+  </div>
+
+  <!-- MORNING REVIEW -->
+  <div id="page-morning" class="page">
+    <div class="date-row">
+      <label>Reviewing</label>
+      <input type="date" id="review-date">
+      <button class="btn btn-sm" onclick="loadMorningReview()">Load</button>
+      <button class="btn btn-sm btn-outline" onclick="setReviewYesterday()">Yesterday</button>
+    </div>
+    <div class="review-grid" id="review-grid">
+      <div class="empty" style="grid-column:1/-1;"><p>Select a date and click Load to see the team's numbers.</p></div>
+    </div>
+    <div class="card" id="review-summary" style="display:none;">
+      <div class="card-title">Team summary</div>
+      <div id="review-summary-content"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY VIEW -->
+  <div id="page-monthly" class="page">
+    <div class="date-row" style="justify-content:space-between;">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">&#8592;</button>
+        <span id="month-display"></span>
+        <button onclick="changeMonth(1)">&#8594;</button>
+      </div>
+    </div>
+    <div class="metrics-grid" id="summary-metrics"></div>
+    <div class="chart-grid">
+      <div class="card"><div class="card-title">Ryan — commercial activity</div><div class="chart-wrap"><canvas id="chart-commercial"></canvas></div></div>
+      <div class="card"><div class="card-title">Isaac — personal lines activity</div><div class="chart-wrap"><canvas id="chart-personal"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Gilbert — daily activity</div>
+      <div class="chart-wrap"><canvas id="chart-gilbert"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Policies bound — daily</div>
+      <div class="chart-wrap"><canvas id="chart-bound"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Daily log</div>
+      <div class="table-wrap" id="monthly-table"></div>
+    </div>
+  </div>
+
+  <!-- GILBERT BONUS SCORECARD -->
+  <div id="page-gilbert" class="page">
+    <div class="bonus-month-nav">
+      <button onclick="changeBonusMonth(-1)">&#8592;</button>
+      <span id="bonus-month-display"></span>
+      <button onclick="changeBonusMonth(1)">&#8594;</button>
+      <button class="btn btn-sm" style="margin-left:auto;" onclick="saveBonusScores()">Save scores</button>
+    </div>
+
+    <div class="bonus-total-card">
+      <div class="bonus-total-label">Monthly bonus earned — Gilbert Villasenor</div>
+      <div class="bonus-total-amount" id="bonus-total-amount">$0</div>
+      <div class="bonus-total-sub" id="bonus-total-sub">0 / 100 points</div>
+    </div>
+
+    <div id="bonus-categories"></div>
+
+    <div class="card">
+      <div class="section-header"><div class="section-title">Monthly review notes</div><span class="owner-tag tag-green">Isaac</span></div>
+      <div style="margin-bottom:10px;"><label style="font-size:12px; color:var(--gray-500); display:block; margin-bottom:4px;">Strengths this month</label><textarea class="bonus-notes" id="note-strengths" placeholder="What went well..."></textarea></div>
+      <div style="margin-bottom:10px;"><label style="font-size:12px; color:var(--gray-500); display:block; margin-bottom:4px;">Areas for improvement</label><textarea class="bonus-notes" id="note-improve" placeholder="What to work on..."></textarea></div>
+      <div><label style="font-size:12px; color:var(--gray-500); display:block; margin-bottom:4px;">Goals for next month</label><textarea class="bonus-notes" id="note-goals" placeholder="Goals and targets..."></textarea></div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-green" onclick="saveBonusScores()">Save scorecard</button>
+    </div>
+  </div>
+
+  <!-- GOALS & SETTINGS -->
+  <div id="page-goals" class="page">
+    <div class="goals-grid">
+      <div class="card">
+        <div class="card-title" style="color:var(--blue);">Ryan — daily goals</div>
+        <div class="goal-col-header"><span>Activity label</span><span>Goal</span></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-r1" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-r1"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-r2" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-r2"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-r3" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-r3"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-r4" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-r4"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green);">Isaac — daily goals</div>
+        <div class="goal-col-header"><span>Activity label</span><span>Goal</span></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-i1" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-i1"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-i2" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-i2"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-i3" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-i3"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-i4" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-i4"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--purple);">Gilbert — daily goals</div>
+        <div class="goal-col-header"><span>Activity label</span><span>Goal</span></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-g1" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-g1"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-g2" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-g2"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-g3" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-g3"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-g4" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-g4"></div>
+        <div class="goal-row"><input class="goal-label-input" type="text" id="gl-edit-g5" placeholder="Activity name"><input class="goal-input" type="number" min="0" id="g-g5"></div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:24px;">
+      <button class="btn" onclick="saveGoals()">Save goals &amp; labels</button>
+      <button class="btn btn-outline" onclick="resetGoals()">Reset to defaults</button>
+    </div>
+
+    <div class="card" style="border: 1px solid #fad0cc;">
+      <div class="card-title" style="color:var(--red);">Data management</div>
+      <p style="font-size:13px; color:var(--gray-500); margin-bottom:14px;">Export all data for backup, or import a previously exported file.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="exportData()">Export data</button>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;">Import data <input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
+        <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear all data</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DEFAULTS = { r1:5, r2:2, r3:1, r4:1, i1:3, i2:3, i3:1, i4:2, g1:5, g2:3, g3:5, g4:30, g5:0 };
+const LABEL_DEFAULTS = {
+  r1:'Outbound contacts (calls + drop-ins)', r2:'Commercial quotes issued',
+  r3:'Referral conversations', r4:'Commercial policies bound',
+  i1:'New PL quotes issued', i2:'Unsold quote follow-ups',
+  i3:'BNI / referral leads received', i4:'PL policies bound',
+  g1:'Service tickets completed', g2:'Quotes run / completed',
+  g3:'Emails / follow-ups handled', g4:'Training activity (mins)', g5:'Activity 5'
+};
+const BONUS_CATS = [
+  { id:'training', label:'Training & Development', bands:['Exceptional progress and contribution','Strong and consistent effort','Meets expectations','Needs improvement','Minimal participation or incomplete'] },
+  { id:'service', label:'Service Ticket Performance', bands:['Excellent accuracy and turnaround','Very dependable with minor issues','Meets expectations','Frequent corrections or delays','Significant performance concerns'] },
+  { id:'quoting', label:'Quoting Performance', bands:['Highly accurate and efficient','Strong performance overall','Meets expectations','Inconsistent or delayed','Frequent errors or missed expectations'] },
+  { id:'availability', label:'Availability & Reliability', bands:['Extremely reliable and communicative','Reliable with occasional issues','Meets expectations','Noticeable attendance/reliability concerns','Frequent disruptions or poor communication'] },
+  { id:'initiative', label:'Initiative & Team Contribution', bands:['Consistently proactive and highly engaged','Strong team contributor','Meets expectations','Limited initiative shown','Reactive only / lacks engagement'] }
+];
+
+let goals = JSON.parse(localStorage.getItem('eig_goals') || JSON.stringify(DEFAULTS));
+let labels = JSON.parse(localStorage.getItem('eig_labels') || JSON.stringify(LABEL_DEFAULTS));
+let data = JSON.parse(localStorage.getItem('eig_data') || '{}');
+let bonusData = JSON.parse(localStorage.getItem('eig_bonus') || '{}');
+let dirty = false;
+let currentRole = 'ryan';
+let currentMonth = new Date();
+let bonusMonth = new Date();
+let charts = {};
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function yesterdayStr() { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; }
+function monthKey(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+function setToday() { document.getElementById('entry-date').value = todayStr(); loadDay(); }
+function setReviewYesterday() { document.getElementById('review-date').value = yesterdayStr(); loadMorningReview(); }
+
+function switchRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.role-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.role-tab.'+role).classList.add('active');
+  document.getElementById('panel-'+role).classList.add('active');
+  loadDay();
+}
+
+function loadDay() {
+  const date = document.getElementById('entry-date').value;
+  if (!date) return;
+  const entry = data[date] || {};
+  ['r1','r2','r3','r4'].forEach(k => document.getElementById(k).value = entry[k] !== undefined ? entry[k] : '');
+  ['i1','i2','i3','i4'].forEach(k => document.getElementById(k).value = entry[k] !== undefined ? entry[k] : '');
+  ['g1','g2','g3','g4','g5'].forEach(k => document.getElementById(k).value = entry[k] !== undefined ? entry[k] : '');
+  dirty = false;
+  document.getElementById('unsaved-banner').style.display = 'none';
+  updateScores();
+  refreshGoalLabels();
+}
+
+function markDirty() { dirty = true; document.getElementById('unsaved-banner').style.display = 'flex'; updateScores(); }
+
+function saveDay() {
+  const date = document.getElementById('entry-date').value;
+  if (!date) { showToast('Select a date first'); return; }
+  const entry = data[date] || {};
+  ['r1','r2','r3','r4','i1','i2','i3','i4','g1','g2','g3','g4','g5'].forEach(k => {
+    entry[k] = parseInt(document.getElementById(k).value) || 0;
+  });
+  data[date] = entry;
+  localStorage.setItem('eig_data', JSON.stringify(data));
+  dirty = false;
+  document.getElementById('unsaved-banner').style.display = 'none';
+  showToast('Entry saved for ' + formatDate(date));
+}
+
+function clearPanel() {
+  const keys = currentRole === 'ryan' ? ['r1','r2','r3','r4'] : currentRole === 'isaac' ? ['i1','i2','i3','i4'] : ['g1','g2','g3','g4','g5'];
+  keys.forEach(k => document.getElementById(k).value = '');
+  markDirty();
+}
+
+function updateScores() {
+  const rKeys = ['r1','r2','r3','r4'], iKeys = ['i1','i2','i3','i4'], gKeys = ['g1','g2','g3','g4','g5'];
+  function calcScore(keys, prefix) {
+    let score = 0, max = 0;
+    keys.forEach(k => { const v = parseInt(document.getElementById(k).value)||0; const g = goals[k]||0; score += Math.min(v,g); max += g; });
+    const pct = max > 0 ? Math.round((score/max)*100) : 0;
+    document.getElementById('score-label-'+prefix).textContent = score+' / '+max+' ('+pct+'%)';
+    document.getElementById('progress-'+prefix).style.width = pct+'%';
+  }
+  calcScore(rKeys,'ryan'); calcScore(iKeys,'isaac'); calcScore(gKeys,'gilbert');
+}
+
+function refreshGoalLabels() {
+  ['r1','r2','r3','r4','i1','i2','i3','i4','g1','g2','g3','g4','g5'].forEach(k => {
+    const el = document.getElementById('gl-'+k);
+    if (el) el.textContent = 'goal: '+(goals[k]||0);
+  });
+}
+
+// Morning review
+function loadMorningReview() {
+  const date = document.getElementById('review-date').value;
+  if (!date) return;
+  const entry = data[date] || {};
+  const grid = document.getElementById('review-grid');
+  const hasData = Object.keys(entry).length > 0;
+  if (!hasData) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><p>No data recorded for '+formatDate(date)+'.</p></div>'; document.getElementById('review-summary').style.display='none'; return; }
+
+  function scoreOf(keys) { let s=0,m=0; keys.forEach(k=>{s+=Math.min(entry[k]||0,goals[k]||0);m+=goals[k]||0;}); return {s,m,pct:m>0?Math.round(s/m*100):0}; }
+  const rs = scoreOf(['r1','r2','r3','r4']), is_ = scoreOf(['i1','i2','i3','i4']), gs = scoreOf(['g1','g2','g3','g4','g5']);
+
+  grid.innerHTML = `
+    <div class="review-card ryan">
+      <div class="review-card-header">Ryan — Commercial</div>
+      <div class="review-item"><span class="review-item-label">Outbound contacts</span><span class="review-item-val">${entry.r1||0}</span></div>
+      <div class="review-item"><span class="review-item-label">Commercial quotes</span><span class="review-item-val">${entry.r2||0}</span></div>
+      <div class="review-item"><span class="review-item-label">Referral conversations</span><span class="review-item-val">${entry.r3||0}</span></div>
+      <div class="review-item"><span class="review-item-label">Policies bound</span><span class="review-item-val">${entry.r4||0}</span></div>
+      <div class="review-score"><span>Daily score</span><span class="review-score-val" style="color:var(--blue);">${rs.s}/${rs.m} (${rs.pct}%)</span></div>
+    </div>
+    <div class="review-card isaac">
+      <div class="review-card-header">Isaac — Personal Lines</div>
+      <div class="review-item"><span class="review-item-label">PL quotes issued</span><span class="review-item-val">${entry.i1||0}</span></div>
+      <div class="review-item"><span class="review-item-label">Follow-ups completed</span><span class="review-item-val">${entry.i2||0}</span></div>
+      <div class="review-item"><span class="review-item-label">Referral leads received</span><span class="review-item-val">${entry.i3||0}</span></div>
+      <div class="review-item"><span class="review-item-label">PL policies bound</span><span class="review-item-val">${entry.i4||0}</span></div>
+      <div class="review-score"><span>Daily score</span><span class="review-score-val" style="color:var(--green);">${is_.s}/${is_.m} (${is_.pct}%)</span></div>
+    </div>
+    <div class="review-card gilbert">
+      <div class="review-card-header">Gilbert — VA Activity</div>
+      <div class="review-item"><span class="review-item-label">${labels.g1||'Activity 1'}</span><span class="review-item-val">${entry.g1||0}</span></div>
+      <div class="review-item"><span class="review-item-label">${labels.g2||'Activity 2'}</span><span class="review-item-val">${entry.g2||0}</span></div>
+      <div class="review-item"><span class="review-item-label">${labels.g3||'Activity 3'}</span><span class="review-item-val">${entry.g3||0}</span></div>
+      <div class="review-item"><span class="review-item-label">${labels.g4||'Activity 4'}</span><span class="review-item-val">${entry.g4||0}</span></div>
+      <div class="review-item"><span class="review-item-label">${labels.g5||'Activity 5'}</span><span class="review-item-val">${entry.g5||0}</span></div>
+      <div class="review-score"><span>Daily score</span><span class="review-score-val" style="color:var(--purple);">${gs.s}/${gs.m} (${gs.pct}%)</span></div>
+    </div>`;
+  document.getElementById('review-summary').style.display = 'block';
+  document.getElementById('review-summary-content').innerHTML = `
+    <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:14px;">
+      <span>Total policies bound: <strong>${(entry.r4||0)+(entry.i4||0)}</strong></span>
+      <span>Total quotes issued: <strong>${(entry.r2||0)+(entry.i1||0)+(entry.g2||0)}</strong></span>
+      <span>Commercial outbound: <strong>${entry.r1||0}</strong></span>
+    </div>`;
+}
+
+// Monthly view
+function changeMonth(dir) { currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()+dir, 1); renderMonthly(); }
+
+function getMonthEntries() {
+  const y = currentMonth.getFullYear(), m = currentMonth.getMonth();
+  const days = new Date(y,m+1,0).getDate(), entries = [];
+  for (let d=1;d<=days;d++) {
+    const ds = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    if (data[ds]) entries.push({date:ds,...data[ds]});
+  }
+  return entries;
+}
+
+function renderMonthly() {
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-display').textContent = names[currentMonth.getMonth()]+' '+currentMonth.getFullYear();
+  const entries = getMonthEntries();
+  const t = {r1:0,r2:0,r3:0,r4:0,i1:0,i2:0,i3:0,i4:0,g1:0,g2:0,g3:0,g4:0,g5:0};
+  entries.forEach(e => Object.keys(t).forEach(k => t[k]+=(e[k]||0)));
+  const wdays = getWorkdays();
+  document.getElementById('summary-metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-label">Commercial outbound</div><div class="metric-value">${t.r1}</div><div class="metric-sub">goal: ${goals.r1*wdays}</div></div>
+    <div class="metric-card green"><div class="metric-label">Comm. policies bound</div><div class="metric-value">${t.r4}</div><div class="metric-sub">goal: ${goals.r4*wdays}</div></div>
+    <div class="metric-card green"><div class="metric-label">PL policies bound</div><div class="metric-value">${t.i4}</div><div class="metric-sub">goal: ${goals.i4*wdays}</div></div>
+    <div class="metric-card purple"><div class="metric-label">${labels.g1||'G. Activity 1'}</div><div class="metric-value">${t.g1}</div><div class="metric-sub">goal: ${goals.g1*wdays}</div></div>
+    <div class="metric-card purple"><div class="metric-label">${labels.g2||'G. Activity 2'}</div><div class="metric-value">${t.g2}</div><div class="metric-sub">goal: ${goals.g2*wdays}</div></div>
+    <div class="metric-card purple"><div class="metric-label">${labels.g3||'G. Activity 3'}</div><div class="metric-value">${t.g3}</div><div class="metric-sub">goal: ${goals.g3*wdays}</div></div>
+    <div class="metric-card purple"><div class="metric-label">${labels.g4||'G. Activity 4'}</div><div class="metric-value">${t.g4}</div><div class="metric-sub">goal: ${goals.g4*wdays}</div></div>
+    <div class="metric-card purple"><div class="metric-label">${labels.g5||'G. Activity 5'}</div><div class="metric-value">${t.g5}</div><div class="metric-sub">goal: ${goals.g5*wdays}</div></div>
+    <div class="metric-card amber"><div class="metric-label">Days with entries</div><div class="metric-value">${entries.length}</div><div class="metric-sub">of ${wdays} workdays</div></div>
+    <div class="metric-card"><div class="metric-label">Referral convos</div><div class="metric-value">${t.r3}</div><div class="metric-sub">goal: ${goals.r3*wdays}</div></div>`;
+  renderMonthlyCharts(entries);
+  renderMonthlyTable(entries);
+}
+
+function getWorkdays() {
+  const y=currentMonth.getFullYear(),m=currentMonth.getMonth(),days=new Date(y,m+1,0).getDate();
+  let c=0; for(let d=1;d<=days;d++){const dow=new Date(y,m,d).getDay();if(dow!==0&&dow!==6)c++;} return c;
+}
+
+function renderMonthlyCharts(entries) {
+  const dayLabels = entries.map(e=>e.date.split('-')[2]);
+  if(charts.commercial)charts.commercial.destroy();
+  if(charts.personal)charts.personal.destroy();
+  if(charts.gilbert_chart)charts.gilbert_chart.destroy();
+  if(charts.bound)charts.bound.destroy();
+  const opts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10},stepSize:1}}}};
+
+  // Ryan — all 4 commercial fields
+  charts.commercial = new Chart(document.getElementById('chart-commercial'),{type:'bar',data:{labels:dayLabels,datasets:[
+    {label:labels.r1||'Outbound contacts',data:entries.map(e=>e.r1||0),backgroundColor:'#29ACE3',borderRadius:3},
+    {label:labels.r2||'Comm. quotes',data:entries.map(e=>e.r2||0),backgroundColor:'#17558D',borderRadius:3},
+    {label:labels.r3||'Referral convos',data:entries.map(e=>e.r3||0),backgroundColor:'#8ecae6',borderRadius:3},
+    {label:labels.r4||'Comm. bound',data:entries.map(e=>e.r4||0),backgroundColor:'#0a2e52',borderRadius:3}
+  ]},options:{...opts}});
+
+  // Isaac — all 4 personal lines fields
+  charts.personal = new Chart(document.getElementById('chart-personal'),{type:'bar',data:{labels:dayLabels,datasets:[
+    {label:labels.i1||'PL quotes',data:entries.map(e=>e.i1||0),backgroundColor:'#2d8a4e',borderRadius:3},
+    {label:labels.i2||'Follow-ups',data:entries.map(e=>e.i2||0),backgroundColor:'#5cb85c',borderRadius:3},
+    {label:labels.i3||'Referral leads',data:entries.map(e=>e.i3||0),backgroundColor:'#a8d5b5',borderRadius:3},
+    {label:labels.i4||'PL bound',data:entries.map(e=>e.i4||0),backgroundColor:'#145228',borderRadius:3}
+  ]},options:{...opts}});
+
+  // Gilbert — all 5 fields
+  charts.gilbert_chart = new Chart(document.getElementById('chart-gilbert'),{type:'bar',data:{labels:dayLabels,datasets:[
+    {label:labels.g1||'Activity 1',data:entries.map(e=>e.g1||0),backgroundColor:'#6b46c1',borderRadius:3},
+    {label:labels.g2||'Activity 2',data:entries.map(e=>e.g2||0),backgroundColor:'#9f7aea',borderRadius:3},
+    {label:labels.g3||'Activity 3',data:entries.map(e=>e.g3||0),backgroundColor:'#d6bcfa',borderRadius:3},
+    {label:labels.g4||'Activity 4',data:entries.map(e=>e.g4||0),backgroundColor:'#44337a',borderRadius:3},
+    {label:labels.g5||'Activity 5',data:entries.map(e=>e.g5||0),backgroundColor:'#b794f4',borderRadius:3}
+  ]},options:{...opts}});
+
+  // Policies bound — Ryan + Isaac
+  charts.bound = new Chart(document.getElementById('chart-bound'),{type:'line',data:{labels:dayLabels,datasets:[
+    {label:labels.r4||'Comm. bound',data:entries.map(e=>e.r4||0),borderColor:'#17558D',backgroundColor:'rgba(23,85,141,0.1)',tension:0.3,fill:true,pointRadius:4},
+    {label:labels.i4||'PL bound',data:entries.map(e=>e.i4||0),borderColor:'#2d8a4e',backgroundColor:'rgba(45,138,78,0.1)',tension:0.3,fill:true,pointRadius:4}
+  ]},options:{...opts}});
+}
+
+function renderMonthlyTable(entries) {
+  if(!entries.length){document.getElementById('monthly-table').innerHTML='<div class="empty"><p>No entries for this month yet.</p></div>';return;}
+  const rows = entries.slice().reverse().map(e=>{
+    const tot = (e.r4||0)+(e.i4||0);
+    return `<tr><td>${formatDate(e.date)}</td><td>${e.r1||0}</td><td>${e.r2||0}</td><td>${e.r4||0}</td><td>${e.i1||0}</td><td>${e.i2||0}</td><td>${e.i4||0}</td><td>${e.g1||0}</td><td>${e.g2||0}</td><td>${e.g3||0}</td><td>${e.g4||0}</td><td>${e.g5||0}</td><td><strong>${tot}</strong></td><td><button class="btn btn-outline btn-sm" onclick="editEntry('${e.date}')">Edit</button></td></tr>`;
+  }).join('');
+  const g1l=labels.g1||'G.Activity 1', g2l=labels.g2||'G.Activity 2', g3l=labels.g3||'G.Activity 3', g4l=labels.g4||'G.Activity 4', g5l=labels.g5||'G.Activity 5';
+  document.getElementById('monthly-table').innerHTML=`<table class="data-table"><thead><tr><th>Date</th><th>Outbound</th><th>Comm.Q</th><th>Comm.Bound</th><th>PL Quotes</th><th>Follow-ups</th><th>PL Bound</th><th>${g1l}</th><th>${g2l}</th><th>${g3l}</th><th>${g4l}</th><th>${g5l}</th><th>Bound</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function editEntry(date){document.getElementById('entry-date').value=date;showPage('daily');loadDay();}
+
+// Gilbert bonus scorecard
+function changeBonusMonth(dir){bonusMonth=new Date(bonusMonth.getFullYear(),bonusMonth.getMonth()+dir,1);renderBonusScorecard();}
+
+function renderBonusScorecard(){
+  const names=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mk = monthKey(bonusMonth);
+  document.getElementById('bonus-month-display').textContent=names[bonusMonth.getMonth()]+' '+bonusMonth.getFullYear();
+  const saved = bonusData[mk] || {};
+  let html='';
+  BONUS_CATS.forEach(cat=>{
+    const val = saved[cat.id] !== undefined ? saved[cat.id] : 10;
+    html+=`<div class="bonus-category">
+      <div class="bonus-cat-header"><div class="bonus-cat-name">${cat.label}</div><div class="bonus-cat-max">/ 20 points</div></div>
+      <div class="bonus-score-row">
+        <input type="range" min="0" max="20" value="${val}" class="bonus-slider" id="slider-${cat.id}" oninput="updateBonusDisplay('${cat.id}')">
+        <div class="bonus-score-display" id="val-${cat.id}">${val}</div>
+        <div class="bonus-band ${getBandClass(val)}" id="band-${cat.id}">${getBandLabel(cat,val)}</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('bonus-categories').innerHTML=html;
+  document.getElementById('note-strengths').value = saved.noteStrengths||'';
+  document.getElementById('note-improve').value = saved.noteImprove||'';
+  document.getElementById('note-goals').value = saved.noteGoals||'';
+  updateBonusTotals();
+}
+
+function getBandClass(v){
+  if(v>=17)return'band-exceptional';
+  if(v>=13)return'band-strong';
+  if(v>=9)return'band-meets';
+  if(v>=5)return'band-needs';
+  return'band-minimal';
+}
+function getBandLabel(cat,v){
+  if(v>=17)return cat.bands[0];
+  if(v>=13)return cat.bands[1];
+  if(v>=9)return cat.bands[2];
+  if(v>=5)return cat.bands[3];
+  return cat.bands[4];
+}
+
+function updateBonusDisplay(id){
+  const v=parseInt(document.getElementById('slider-'+id).value);
+  document.getElementById('val-'+id).textContent=v;
+  const cat=BONUS_CATS.find(c=>c.id===id);
+  document.getElementById('band-'+id).className='bonus-band '+getBandClass(v);
+  document.getElementById('band-'+id).textContent=getBandLabel(cat,v);
+  updateBonusTotals();
+}
+
+function updateBonusTotals(){
+  let total=0;
+  BONUS_CATS.forEach(cat=>{
+    const el=document.getElementById('slider-'+cat.id);
+    if(el)total+=parseInt(el.value)||0;
+  });
+  document.getElementById('bonus-total-amount').textContent='$'+total;
+  document.getElementById('bonus-total-sub').textContent=total+' / 100 points';
+  const color = total>=80?'var(--green)':total>=60?'var(--amber)':'var(--purple)';
+  document.getElementById('bonus-total-amount').style.color=color;
+}
+
+function saveBonusScores(){
+  const mk=monthKey(bonusMonth);
+  const record={};
+  BONUS_CATS.forEach(cat=>{record[cat.id]=parseInt(document.getElementById('slider-'+cat.id).value)||0;});
+  record.noteStrengths=document.getElementById('note-strengths').value;
+  record.noteImprove=document.getElementById('note-improve').value;
+  record.noteGoals=document.getElementById('note-goals').value;
+  bonusData[mk]=record;
+  localStorage.setItem('eig_bonus',JSON.stringify(bonusData));
+  showToast('Scorecard saved for '+document.getElementById('bonus-month-display').textContent);
+}
+
+// Goals
+function saveGoals(){
+  const keys = ['r1','r2','r3','r4','i1','i2','i3','i4','g1','g2','g3','g4','g5'];
+  keys.forEach(k=>{
+    goals[k]=parseInt(document.getElementById('g-'+k).value)||0;
+    const le = document.getElementById('gl-edit-'+k);
+    if(le && le.value.trim()) labels[k] = le.value.trim();
+  });
+  localStorage.setItem('eig_goals',JSON.stringify(goals));
+  localStorage.setItem('eig_labels',JSON.stringify(labels));
+  refreshGoalLabels(); refreshActivityLabels(); updateScores(); showToast('Goals & labels saved');
+}
+function resetGoals(){
+  goals={...DEFAULTS}; labels={...LABEL_DEFAULTS};
+  localStorage.setItem('eig_goals',JSON.stringify(goals));
+  localStorage.setItem('eig_labels',JSON.stringify(labels));
+  loadGoalsToForm(); refreshGoalLabels(); refreshActivityLabels(); updateScores(); showToast('Goals reset to defaults');
+}
+function loadGoalsToForm(){
+  const keys = ['r1','r2','r3','r4','i1','i2','i3','i4','g1','g2','g3','g4','g5'];
+  keys.forEach(k=>{
+    const ne=document.getElementById('g-'+k); if(ne) ne.value=goals[k]||0;
+    const le=document.getElementById('gl-edit-'+k); if(le) le.value=labels[k]||LABEL_DEFAULTS[k]||'';
+  });
+}
+function refreshActivityLabels(){
+  const keys = ['r1','r2','r3','r4','i1','i2','i3','i4','g1','g2','g3','g4','g5'];
+  keys.forEach(k=>{
+    const el = document.getElementById('lbl-'+k);
+    if(el) el.textContent = labels[k] || LABEL_DEFAULTS[k] || k;
+  });
+}
+
+// Data management
+function exportData(){
+  const blob=new Blob([JSON.stringify({goals,labels,data,bonusData},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='eig_data_'+todayStr()+'.json';a.click();showToast('Data exported');
+}
+function importData(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{
+    const p=JSON.parse(e.target.result);
+    if(p.data){data=p.data;localStorage.setItem('eig_data',JSON.stringify(data));}
+    if(p.goals){goals=p.goals;localStorage.setItem('eig_goals',JSON.stringify(goals));loadGoalsToForm();}
+    if(p.labels){labels=p.labels;localStorage.setItem('eig_labels',JSON.stringify(labels));}
+    if(p.bonusData){bonusData=p.bonusData;localStorage.setItem('eig_bonus',JSON.stringify(bonusData));}
+    loadDay(); refreshActivityLabels(); showToast('Data imported');
+  }catch{showToast('Import failed');}};
+  reader.readAsText(file);
+}
+function clearAllData(){
+  if(!confirm('Clear all data? This cannot be undone.'))return;
+  data={};bonusData={};
+  localStorage.setItem('eig_data',JSON.stringify(data));
+  localStorage.setItem('eig_bonus',JSON.stringify(bonusData));
+  loadDay();showToast('All data cleared');
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const idx=['daily','morning','monthly','gilbert','goals'].indexOf(name);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(name==='monthly')renderMonthly();
+  if(name==='goals'){loadGoalsToForm();refreshActivityLabels();}
+  if(name==='gilbert')renderBonusScorecard();
+}
+
+function formatDate(str){const[y,m,d]=str.split('-');const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mn[parseInt(m)-1]+' '+parseInt(d)+', '+y;}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('header-date').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  setToday();
+  refreshGoalLabels();
+  refreshActivityLabels();
+  loadGoalsToForm();
+  bonusMonth=new Date(now.getFullYear(),now.getMonth(),1);
+});
+</script>
+</body>
+</html>
