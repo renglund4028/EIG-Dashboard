@@ -808,14 +808,14 @@ async function exportData(){
 async function importData(evt){
   const file=evt.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{try{
+  reader.onload=async e=>{try{
     const p=JSON.parse(e.target.result);
-    if(p.data){data=p.data; const rows=Object.values(data); for(const row of rows) await sbUpsert('daily_entries',row);}
+    if(p.data){data=p.data; for(const row of Object.values(data)) await sbUpsert('daily_entries',row);}
     if(p.goals){goals=p.goals; await sbUpsert('settings',{id:'goals',value:JSON.stringify(goals)});loadGoalsToForm();}
     if(p.labels){labels=p.labels; await sbUpsert('settings',{id:'labels',value:JSON.stringify(labels)});}
     if(p.bonusData){bonusData=p.bonusData; for(const b of Object.values(bonusData)) await sbUpsert('bonus_scores',b);}
     loadDay(); refreshActivityLabels(); showToast('Data imported');
-  }catch{showToast('Import failed');}};
+  }catch(e){console.error(e);showToast('Import failed');}};
   reader.readAsText(file);
 }
 async function clearAllData(){
@@ -823,7 +823,7 @@ async function clearAllData(){
   data={}; bonusData={};
   await fetch(`${SB_URL}/rest/v1/daily_entries?date=gte.2000-01-01`,{method:'DELETE',headers:SB_HEADERS});
   await fetch(`${SB_URL}/rest/v1/bonus_scores?month_key=gte.2000-01`,{method:'DELETE',headers:SB_HEADERS});
-  loadDay();showToast('All data cleared');
+  loadDay(); showToast('All data cleared');
 }
 
 const ADMIN_PIN = '4028';
@@ -890,15 +890,14 @@ async function bootstrap(){
     showToast('Ready');
   } catch(err){
     console.error('Bootstrap error:',err);
-    showToast('Connection error — check console');
+    showToast('Connection error');
     refreshGoalLabels(); refreshActivityLabels(); loadGoalsToForm(); setToday();
     bonusMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
   }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  const now=new Date();
-  document.getElementById('header-date').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('header-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   bootstrap();
 });
 </script>
