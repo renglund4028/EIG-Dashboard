@@ -509,7 +509,7 @@ function loadDay() {
 
 function markDirty() { dirty = true; document.getElementById('unsaved-banner').style.display = 'flex'; updateScores(); }
 
-function saveDay() {
+async function saveDay() {
   const date = document.getElementById('entry-date').value;
   if (!date) { showToast('Select a date first'); return; }
   const entry = data[date] || {};
